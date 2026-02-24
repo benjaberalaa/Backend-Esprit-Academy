@@ -17,5 +17,6 @@ public class RegisterRequest {
     private String password;
     private Role role;
     private String niveau;
+    private Long classeId;
     private String image;
 }

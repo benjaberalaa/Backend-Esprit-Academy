@@ -1,5 +1,6 @@
 package com.pfeproject.EspritAcademy.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
@@ -21,6 +22,11 @@ public class Subject {
     private String title;
 
     @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
-    @JsonManagedReference
+    @JsonManagedReference("subject-course")
     private List<CoursEntity> courses;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "classe_id")
+    @JsonBackReference("subject-classe")
+    private Classe classe;
 }

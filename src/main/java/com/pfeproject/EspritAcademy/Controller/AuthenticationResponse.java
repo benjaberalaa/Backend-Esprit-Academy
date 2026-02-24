@@ -17,4 +17,6 @@ public class AuthenticationResponse {
     private String Nom;
     private String prenom;
     private String image;
+    private String niveau;
+    private Long classeId;
 }

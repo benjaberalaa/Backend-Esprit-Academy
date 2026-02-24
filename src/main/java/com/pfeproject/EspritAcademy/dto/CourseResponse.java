@@ -20,4 +20,7 @@ public class CourseResponse {
     // The ID of the subject this course belongs to
     private Long subjectId;
 
+    // The ID of the classe this course is assigned to
+    private Long classeId;
+
 }

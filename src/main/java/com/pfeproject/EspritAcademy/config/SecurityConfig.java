@@ -1,4 +1,5 @@
 package com.pfeproject.EspritAcademy.config;
+
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,20 +22,17 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(req ->
-                        req.requestMatchers(
-                                        "/api/v1/auth/register",
-                                        "/api/v1/auth/authenticate",
-                                        "/api/v1/**"
-                                ).permitAll()
-                                .anyRequest().authenticated()
-                )
+                .authorizeHttpRequests(req -> req.requestMatchers(
+                        "/api/v1/auth/register",
+                        "/api/v1/auth/authenticate",
+                        "/api/v1/auth/activate" // If applicable
+                ).permitAll()
+                        .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
 
 }

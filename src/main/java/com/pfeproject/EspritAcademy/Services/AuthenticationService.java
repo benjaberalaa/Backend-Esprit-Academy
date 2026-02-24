@@ -7,6 +7,7 @@ import com.pfeproject.EspritAcademy.Entity.Role;
 import com.pfeproject.EspritAcademy.Entity.User;
 import com.pfeproject.EspritAcademy.Exceptions.UserExistException;
 import com.pfeproject.EspritAcademy.Repository.UserRepository;
+import com.pfeproject.EspritAcademy.Repository.ClasseRepository;
 import com.pfeproject.EspritAcademy.config.JwtService;
 import com.pfeproject.EspritAcademy.dto.ForgotPassword;
 import com.pfeproject.EspritAcademy.dto.ResetPassword;
@@ -34,6 +35,7 @@ import java.util.List;
 public class AuthenticationService {
 
     private final UserRepository repository;
+    private final ClasseRepository classeRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -62,8 +64,15 @@ public class AuthenticationService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .niveau(request.getNiveau())
-                .image(imageBase64!=null ?imageBase64.getBytes() : null)
+                .image(imageBase64 != null ? imageBase64.getBytes() : null)
                 .build();
+
+        if (request.getClasseId() == null) {
+            throw new IllegalArgumentException("L'affectation à une classe est obligatoire");
+        }
+
+        user.setClasse(classeRepository.findById(request.getClasseId())
+                .orElseThrow(() -> new RuntimeException("Classe introuvable")));
 
         repository.save(user);
 
@@ -73,8 +82,7 @@ public class AuthenticationService {
         emailService.sendSimpleEmail(
                 user.getEmail(),
                 "Please confirm your account",
-                emailService.buildEmail(user.getFirstname(), link)
-        );
+                emailService.buildEmail(user.getFirstname(), link));
     }
 
     /* ========================= AUTHENTICATE ========================= */
@@ -85,9 +93,7 @@ public class AuthenticationService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getEmail(),
-                            request.getPassword()
-                    )
-            );
+                            request.getPassword()));
         } catch (BadCredentialsException e) {
             throw new BadCredentialsException("Invalid email or password");
         }
@@ -102,7 +108,9 @@ public class AuthenticationService {
                 .role(user.getRole())
                 .Nom(user.getFirstname())
                 .prenom(user.getLastname())
-                .image(Arrays.toString(user.getImage()))
+                .image(user.getImage() != null ? Base64.getEncoder().encodeToString(user.getImage()) : null)
+                .niveau(user.getNiveau())
+                .classeId(user.getClasse() != null ? user.getClasse().getId() : null)
                 .build();
     }
 
@@ -119,8 +127,7 @@ public class AuthenticationService {
         emailService.sendSimpleEmail(
                 user.getEmail(),
                 "Password Reset",
-                emailService.buildEmail(user.getFirstname(), link)
-        );
+                emailService.buildEmail(user.getFirstname(), link));
 
         return "Email sent";
     }
@@ -143,19 +150,38 @@ public class AuthenticationService {
     }
 
     /* ========================= USERS ========================= */
-
     public List<User> getAccounts() {
         return repository.findUsersByRole(Role.ENSEI);
+    }
+
+    public List<User> getUsersByRole(Role role) {
+        return repository.findUsersByRole(role);
     }
 
     public long getnbByRole(Role role) {
         return repository.countByRole(role);
     }
 
+    @Transactional
+    public void assignUserToClasse(Integer userId, Long classeId) {
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        if (classeId != null) {
+            user.setClasse(classeRepository.findById(classeId)
+                    .orElseThrow(() -> new RuntimeException("Classe introuvable")));
+        } else {
+            user.setClasse(null);
+        }
+
+        repository.save(user);
+    }
+
     /* ========================= UPDATE PROFILE ========================= */
 
     @Transactional
-    public void updateUserProfile(MultipartFile file, UpdateProfileRequest request, Principal connectedUser) throws Exception {
+    public void updateUserProfile(MultipartFile file, UpdateProfileRequest request, Principal connectedUser)
+            throws Exception {
 
         // Find user by connected principal (current secure user)
         User existingUser = repository.findUserByEmail(connectedUser.getName())
@@ -169,6 +195,10 @@ public class AuthenticationService {
 
         if (request.getNiveau() != null)
             existingUser.setNiveau(request.getNiveau());
+
+        if (request.getClasseId() != null) {
+            classeRepository.findById(request.getClasseId()).ifPresent(existingUser::setClasse);
+        }
 
         // Email Update Logic
         if (request.getEmail() != null && !request.getEmail().equals(existingUser.getEmail())) {

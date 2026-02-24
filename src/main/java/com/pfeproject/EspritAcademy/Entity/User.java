@@ -1,5 +1,6 @@
 package com.pfeproject.EspritAcademy.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -31,6 +32,12 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "classe_id")
+    @JsonBackReference("user-classe")
+    private Classe classe;
+
     @Lob
     @Column(columnDefinition = "LONGBLOB")
     private byte[] image;
@@ -38,8 +45,7 @@ public class User implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
 
-
-        System.out.println("role.name()      "+role.name());
+        System.out.println("role.name()      " + role.name());
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 

@@ -15,6 +15,7 @@ public class UpdateProfileRequest {
     private String lastname;
     private String email;
     private String niveau;
+    private Long classeId;
     private String oldPassword;
     private String newPassword;
     private String confirmPassword;

@@ -25,6 +25,11 @@ public class CoursEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id")
-    @JsonBackReference
+    @JsonBackReference("subject-course")
     private Subject subject;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "classe_id")
+    @JsonBackReference("course-classe")
+    private Classe classe;
 }

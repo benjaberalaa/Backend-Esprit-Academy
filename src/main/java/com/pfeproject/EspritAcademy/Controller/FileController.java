@@ -2,6 +2,7 @@ package com.pfeproject.EspritAcademy.Controller;
 
 import com.pfeproject.EspritAcademy.Entity.CoursEntity;
 import com.pfeproject.EspritAcademy.Entity.Subject;
+import com.pfeproject.EspritAcademy.Repository.ClasseRepository;
 import com.pfeproject.EspritAcademy.Repository.CoursRepository;
 import com.pfeproject.EspritAcademy.Repository.SubjectRepository;
 import com.pfeproject.EspritAcademy.dto.CourseResponse;
@@ -32,12 +33,19 @@ public class FileController {
     @Autowired
     private SubjectRepository subjectRepository;
 
+    @Autowired
+    private ClasseRepository classeRepository;
+
+    @Autowired
+    private com.pfeproject.EspritAcademy.Repository.UserRepository userRepository;
+
     // Upload a new PDF file
     @PostMapping("/Add")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ENSEI')")
     public ResponseEntity<CourseResponse> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "subjectId", required = false) Long subjectId) {
+            @RequestParam(value = "subjectId", required = false) Long subjectId,
+            @RequestParam(value = "classeId", required = false) Long classeId) {
         log.info("Attempting upload. Auth: "
                 + org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication());
         try {
@@ -54,6 +62,11 @@ public class FileController {
                 subjectRepository.findById(subjectId).ifPresent(entity::setSubject);
             }
 
+            // Link to classe if provided
+            if (classeId != null) {
+                classeRepository.findById(classeId).ifPresent(entity::setClasse);
+            }
+
             // Save to database
             CoursEntity savedEntity = coursRepository.save(entity);
 
@@ -61,7 +74,8 @@ public class FileController {
             CourseResponse response = new CourseResponse(
                     savedEntity.getId(),
                     savedEntity.getFileName(),
-                    savedEntity.getSubject() != null ? savedEntity.getSubject().getId() : null);
+                    savedEntity.getSubject() != null ? savedEntity.getSubject().getId() : null,
+                    savedEntity.getClasse() != null ? savedEntity.getClasse().getId() : null);
 
             return ResponseEntity.ok(response);
         } catch (IOException e) {
@@ -74,14 +88,32 @@ public class FileController {
     @GetMapping("/GETAll")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ENSEI')")
     public List<CourseResponse> getAllCourses() {
-        List<CoursEntity> entities = coursRepository.findAll();
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        com.pfeproject.EspritAcademy.Entity.User currentUser = userRepository.findByEmail(email);
+
+        List<CoursEntity> entities;
+        if (currentUser != null && currentUser.getRole() == com.pfeproject.EspritAcademy.Entity.Role.USER) {
+            // If student, filter by their class + universal courses (classe == null)
+            Long userClasseId = (currentUser.getClasse() != null) ? currentUser.getClasse().getId() : null;
+
+            entities = coursRepository.findAll().stream()
+                    .filter(c -> c.getClasse() == null
+                            || (userClasseId != null && c.getClasse().getId().equals(userClasseId)))
+                    .toList();
+        } else {
+            // Admin or ENSEI see all
+            entities = coursRepository.findAll();
+        }
+
         List<CourseResponse> responses = new ArrayList<>();
 
         for (CoursEntity entity : entities) {
             CourseResponse response = new CourseResponse(
                     entity.getId(),
                     entity.getFileName(),
-                    entity.getSubject() != null ? entity.getSubject().getId() : null);
+                    entity.getSubject() != null ? entity.getSubject().getId() : null,
+                    entity.getClasse() != null ? entity.getClasse().getId() : null);
             responses.add(response);
         }
 
@@ -163,6 +195,42 @@ public class FileController {
                     }
                 } catch (NumberFormatException e) {
                     return ResponseEntity.badRequest().body("Invalid subject ID format");
+                }
+            }
+
+            coursRepository.save(course);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Assign a course to a classe
+    @PutMapping("/{id}/classe")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> assignCourseToClasse(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+
+        Optional<CoursEntity> optionalCourse = coursRepository.findById(id);
+        if (optionalCourse.isPresent()) {
+            CoursEntity course = optionalCourse.get();
+            String classeIdStr = body.get("classeId");
+
+            if (classeIdStr == null || classeIdStr.isEmpty() || classeIdStr.equals("None")) {
+                course.setClasse(null);
+            } else {
+                try {
+                    Long classeId = Long.parseLong(classeIdStr);
+                    Optional<com.pfeproject.EspritAcademy.Entity.Classe> optionalClasse = classeRepository
+                            .findById(classeId);
+                    if (optionalClasse.isPresent()) {
+                        course.setClasse(optionalClasse.get());
+                    } else {
+                        return ResponseEntity.badRequest().body("Classe not found");
+                    }
+                } catch (NumberFormatException e) {
+                    return ResponseEntity.badRequest().body("Invalid classe ID format");
                 }
             }
 
