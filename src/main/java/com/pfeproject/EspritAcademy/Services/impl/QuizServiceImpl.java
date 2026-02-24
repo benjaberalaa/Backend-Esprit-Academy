@@ -22,7 +22,6 @@ public class QuizServiceImpl implements QuizService {
         private final UserRepository userRepository;
         private final QuestionRepository questionRepository;
 
-
         @Override
         public QuizDto createQuiz(QuizDto quizDto) {
                 Quiz quiz = new Quiz();
@@ -54,7 +53,7 @@ public class QuizServiceImpl implements QuizService {
 
         @Override
         public com.pfeproject.EspritAcademy.dto.QuestionDto addQuestionToQuiz(Long quizId,
-                                                                              com.pfeproject.EspritAcademy.dto.QuestionDto questionDto) {
+                        com.pfeproject.EspritAcademy.dto.QuestionDto questionDto) {
                 Quiz quiz = quizRepository.findById(quizId)
                                 .orElseThrow(() -> new RuntimeException("Quiz not found"));
 
@@ -62,9 +61,9 @@ public class QuizServiceImpl implements QuizService {
                 question.setQuiz(quiz);
                 updateQuestionFromDto(question, questionDto);
 
-                // Ensure options have the question reference set if needed, though
-                // updateQuestionFromDto handles it
-
+                if (questionDto.getId() != null && questionDto.getId() > 0) {
+                        question.setId(questionDto.getId());
+                }
 
                 Question savedQuestion = questionRepository.save(question);
                 return convertQuestionToDto(savedQuestion);
@@ -72,7 +71,7 @@ public class QuizServiceImpl implements QuizService {
 
         @Override
         public com.pfeproject.EspritAcademy.dto.QuestionDto updateQuestion(Long questionId,
-                                                                           com.pfeproject.EspritAcademy.dto.QuestionDto questionDto) {
+                        com.pfeproject.EspritAcademy.dto.QuestionDto questionDto) {
                 Question question = questionRepository.findById(questionId)
                                 .orElseThrow(() -> new RuntimeException("Question not found"));
 
@@ -117,7 +116,9 @@ public class QuizServiceImpl implements QuizService {
                 if (dto.getOptions() != null) {
                         List<Option> options = dto.getOptions().stream().map(optDto -> {
                                 Option opt = new Option();
-                                opt.setId(optDto.getId());
+                                if (optDto.getId() != null && optDto.getId() > 0) {
+                                        opt.setId(optDto.getId());
+                                }
                                 opt.setLabel(optDto.getLabel());
                                 opt.setCorrect(optDto.getCorrect());
                                 opt.setQuestion(question);
@@ -248,6 +249,23 @@ public class QuizServiceImpl implements QuizService {
                                 .stream()
                                 .map(this::convertQuizScoreToDto)
                                 .collect(Collectors.toList());
+        }
+
+        @Override
+        public void assignQuizToStudent(Long quizId, Long studentId) {
+                Quiz quiz = quizRepository.findById(quizId)
+                                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+                User student = userRepository.findById(studentId.intValue())
+                                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+                if (quizAssignmentRepository.findByStudentIdAndQuizId(studentId, quizId).isEmpty()) {
+                        QuizAssignment assignment = new QuizAssignment();
+                        assignment.setQuiz(quiz);
+                        assignment.setStudent(student);
+                        assignment.setStarted(false);
+                        assignment.setCompleted(false);
+                        quizAssignmentRepository.save(assignment);
+                }
         }
 
         // =========================================================

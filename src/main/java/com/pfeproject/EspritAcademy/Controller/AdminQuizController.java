@@ -40,4 +40,11 @@ public class AdminQuizController {
     public ResponseEntity<List<QuizDto>> getAllQuizzes() {
         return ResponseEntity.ok(quizService.getAllQuizzesForAdmin());
     }
+
+    @PostMapping("/assign")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> assignQuiz(@RequestParam Long quizId, @RequestParam Long studentId) {
+        quizService.assignQuizToStudent(quizId, studentId);
+        return ResponseEntity.ok().build();
+    }
 }

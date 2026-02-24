@@ -28,13 +28,15 @@ public interface QuizService {
 
     // Admin Question methods
     com.pfeproject.EspritAcademy.dto.QuestionDto addQuestionToQuiz(Long quizId,
-                                                                   com.pfeproject.EspritAcademy.dto.QuestionDto questionDto);
+            com.pfeproject.EspritAcademy.dto.QuestionDto questionDto);
 
     com.pfeproject.EspritAcademy.dto.QuestionDto updateQuestion(Long questionId,
-                                                                com.pfeproject.EspritAcademy.dto.QuestionDto questionDto);
+            com.pfeproject.EspritAcademy.dto.QuestionDto questionDto);
 
     void deleteQuestion(Long questionId);
 
     QuizScoreDto getQuizResult(String student, Long quizId);
+
+    void assignQuizToStudent(Long quizId, Long studentId);
 
 }
