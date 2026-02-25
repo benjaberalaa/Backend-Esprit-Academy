@@ -1,4 +1,5 @@
 package com.pfeproject.EspritAcademy.Controller;
+
 import com.google.gson.Gson;
 import com.pfeproject.EspritAcademy.Entity.Role;
 import com.pfeproject.EspritAcademy.Entity.User;
@@ -18,25 +19,49 @@ import java.util.List;
 public class AuthenticationController {
 
     private final AuthenticationService service;
+
     @GetMapping("/GetAccounts")
     @ResponseStatus(HttpStatus.OK)
-    public List<User> GetAccountsAll()  {
+    public List<User> GetAccountsAll() {
         System.out.println("tay");
         return service.getAccounts();
     }
 
-
-//    @ResponseStatus(HttpStatus.OK)
-//    public void register(@ModelAttribute RegisterRequest request) throws Exception {
-//        service.register(request);
-//    }
+    // @ResponseStatus(HttpStatus.OK)
+    // public void register(@ModelAttribute RegisterRequest request) throws
+    // Exception {
+    // service.register(request);
+    // }
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.OK)
     public void register(@RequestParam("file") MultipartFile file,
-                         @RequestParam("request") String requestJson
-                         ) throws Exception {
+            @RequestParam("request") String requestJson) throws Exception {
         RegisterRequest request = new Gson().fromJson(requestJson, RegisterRequest.class);
-        service.register(file,request);
+        service.register(file, request);
+    }
+
+    @PostMapping("/forgotpassword")
+    @ResponseStatus(HttpStatus.OK)
+    public void forgotpassword(
+            @RequestParam("request") String requestJson) throws Exception {
+        com.pfeproject.EspritAcademy.dto.ForgotPassword request = new com.google.gson.Gson().fromJson(requestJson,
+                com.pfeproject.EspritAcademy.dto.ForgotPassword.class);
+        service.forgotpassword(request);
+    }
+
+    @PostMapping("/resetpassword")
+    @ResponseStatus(HttpStatus.OK)
+    public void resetpassword(
+            @RequestParam("request") String requestJson) {
+        com.pfeproject.EspritAcademy.dto.ResetPassword request = new com.google.gson.Gson().fromJson(requestJson,
+                com.pfeproject.EspritAcademy.dto.ResetPassword.class);
+        if (request == null || request.getToken() == null || request.getToken().isEmpty()) {
+            throw new IllegalArgumentException("Token is required");
+        }
+        if (request.getPassword() == null || request.getPassword().isEmpty()) {
+            throw new IllegalArgumentException("Password is required");
+        }
+        service.resetpassword(request, request.getToken());
     }
 
     @PostMapping("/authenticate")
@@ -60,15 +85,16 @@ public class AuthenticationController {
 
     @PutMapping("/profile")
     public void updateProfile(@RequestParam(value = "file", required = false) MultipartFile file,
-                              @RequestParam("request") String requestJson,
-                              Principal connectedUser) throws Exception {
+            @RequestParam("request") String requestJson,
+            Principal connectedUser) throws Exception {
         System.out.println(requestJson);
         UpdateProfileRequest request = new Gson().fromJson(requestJson, UpdateProfileRequest.class);
         System.out.println(request);
         service.updateUserProfile(file, request, connectedUser);
     }
+
     @DeleteMapping("/DeleteProfile/{idprofile}")
     public void DeleteProfile(@PathVariable Integer idprofile) {
-        service.deleteProfile( idprofile);
+        service.deleteProfile(idprofile);
     }
 }

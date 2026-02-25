@@ -62,17 +62,15 @@ public class AuthenticationService {
                 .lastname(request.getLastname())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(request.getRole() != null ? request.getRole() : Role.USER)
                 .niveau(request.getNiveau())
                 .image(imageBase64 != null ? imageBase64.getBytes() : null)
                 .build();
 
-        if (request.getClasseId() == null) {
-            throw new IllegalArgumentException("L'affectation à une classe est obligatoire");
+        if (request.getClasseId() != null) {
+            user.setClasse(classeRepository.findById(request.getClasseId())
+                    .orElseThrow(() -> new RuntimeException("Classe introuvable")));
         }
-
-        user.setClasse(classeRepository.findById(request.getClasseId())
-                .orElseThrow(() -> new RuntimeException("Classe introuvable")));
 
         repository.save(user);
 

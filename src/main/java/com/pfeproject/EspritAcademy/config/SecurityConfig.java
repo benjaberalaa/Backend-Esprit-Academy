@@ -15,24 +15,25 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @AllArgsConstructor
 public class SecurityConfig {
-    private final JwtAuthenticationFilter jwtAuthFilter;
-    private final AuthenticationProvider authenticationProvider;
+        private final JwtAuthenticationFilter jwtAuthFilter;
+        private final AuthenticationProvider authenticationProvider;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(req -> req.requestMatchers(
-                        "/api/v1/auth/register",
-                        "/api/v1/auth/authenticate",
-                        "/api/v1/auth/activate" // If applicable
-                ).permitAll()
-                        .anyRequest().authenticated())
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(AbstractHttpConfigurer::disable)
+                                .authorizeHttpRequests(req -> req.requestMatchers(
+                                                "/api/v1/auth/register",
+                                                "/api/v1/auth/authenticate",
+                                                "/api/v1/auth/activate",
+                                                "/api/v1/auth/forgotpassword",
+                                                "/api/v1/auth/resetpassword").permitAll()
+                                                .anyRequest().authenticated())
+                                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authenticationProvider(authenticationProvider)
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
 }
