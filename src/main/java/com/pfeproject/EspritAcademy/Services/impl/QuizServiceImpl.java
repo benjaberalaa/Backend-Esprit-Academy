@@ -252,6 +252,14 @@ public class QuizServiceImpl implements QuizService {
         }
 
         @Override
+        public List<QuizScoreDto> getQuizScoresByQuizId(Long quizId) {
+                return quizScoreRepository.findByQuizId(quizId)
+                                .stream()
+                                .map(this::convertQuizScoreToDto)
+                                .collect(Collectors.toList());
+        }
+
+        @Override
         public void assignQuizToStudent(Long quizId, Long studentId) {
                 Quiz quiz = quizRepository.findById(quizId)
                                 .orElseThrow(() -> new RuntimeException("Quiz not found"));
@@ -333,6 +341,7 @@ public class QuizServiceImpl implements QuizService {
                 dto.setQuizId(score.getQuiz().getId());
                 dto.setScore(score.getScore());
                 dto.setTotal(score.getTotal());
+                dto.setStudentName(score.getStudent().getFirstname() + " " + score.getStudent().getLastname());
                 dto.setDurationSec(score.getDurationSec());
                 dto.setFinished(score.getFinished());
                 return dto;

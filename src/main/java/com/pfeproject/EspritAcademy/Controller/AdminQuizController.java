@@ -47,4 +47,10 @@ public class AdminQuizController {
         quizService.assignQuizToStudent(quizId, studentId);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/{id}/scores")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<com.pfeproject.EspritAcademy.dto.QuizScoreDto>> getQuizScores(@PathVariable Long id) {
+        return ResponseEntity.ok(quizService.getQuizScoresByQuizId(id));
+    }
 }
